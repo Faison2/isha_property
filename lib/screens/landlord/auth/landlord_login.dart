@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-class TenantLoginPage extends StatefulWidget {
-  const TenantLoginPage({super.key});
+class LandlordLoginPage extends StatefulWidget {
+  const LandlordLoginPage({super.key});
 
   @override
-  State<TenantLoginPage> createState() => _TenantLoginPageState();
+  State<LandlordLoginPage> createState() => _LandlordLoginPageState();
 }
 
-class _TenantLoginPageState extends State<TenantLoginPage>
+class _LandlordLoginPageState extends State<LandlordLoginPage>
     with TickerProviderStateMixin {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -20,10 +20,7 @@ class _TenantLoginPageState extends State<TenantLoginPage>
   late Animation<Offset> _headerSlide;
   late Animation<Offset> _formSlide;
 
-  // Purple/violet tenant theme
-  static const Color _primary = Color(0xFF7B6FD0);
-  static const Color _primaryLight = Color(0xFFAFA9EC);
-  static const Color _primaryGlow = Color(0xFF5B50C8);
+  static const Color _primary = Color(0xFFC87941);
 
   @override
   void initState() {
@@ -79,7 +76,7 @@ class _TenantLoginPageState extends State<TenantLoginPage>
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0818),
+      backgroundColor: const Color(0xFF1A0A00),
       resizeToAvoidBottomInset: true,
       body: Stack(
         fit: StackFit.expand,
@@ -91,7 +88,7 @@ class _TenantLoginPageState extends State<TenantLoginPage>
             alignment: Alignment.center,
           ),
 
-          // Base dark overlay
+          // Gradient overlay
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -99,63 +96,29 @@ class _TenantLoginPageState extends State<TenantLoginPage>
                 end: Alignment.bottomCenter,
                 stops: [0.0, 0.3, 0.6, 1.0],
                 colors: [
-                  Color(0x99000000),
+                  Color(0x88000000),
                   Color(0x55000000),
                   Color(0xBB000000),
-                  Color(0xF0000000),
+                  Color(0xEE000000),
                 ],
               ),
             ),
           ),
 
-          // Purple tint overlay — distinguishes tenant theme
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color(0x221A0D3D),
-                  Color(0x110D0818),
-                  Color(0x332D1F6B),
-                ],
-              ),
-            ),
-          ),
-
-          // Purple bottom glow
+          // Warm bottom glow
           Positioned(
             bottom: 0,
             left: 0,
             right: 0,
             child: Container(
-              height: size.height * 0.55,
+              height: size.height * 0.5,
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.bottomCenter,
                   end: Alignment.topCenter,
                   colors: [
-                    Color(0x777B6FD0),
-                    Color(0x007B6FD0),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          // Ambient purple top-right glow
-          Positioned(
-            top: -60,
-            right: -60,
-            child: Container(
-              width: 220,
-              height: 220,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    _primary.withOpacity(0.25),
-                    _primary.withOpacity(0.0),
+                    Color(0x66C87941),
+                    Color(0x00C87941),
                   ],
                 ),
               ),
@@ -183,7 +146,6 @@ class _TenantLoginPageState extends State<TenantLoginPage>
                           children: [
                             _GlassIconButton(
                               icon: Icons.arrow_back_ios_new_rounded,
-                              accentColor: _primary,
                               onTap: () => Navigator.of(context).pop(),
                             ),
                             Container(
@@ -192,17 +154,17 @@ class _TenantLoginPageState extends State<TenantLoginPage>
                                 vertical: 7,
                               ),
                               decoration: BoxDecoration(
-                                color: _primary.withOpacity(0.12),
+                                color: Colors.white.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
-                                  color: _primary.withOpacity(0.3),
+                                  color: Colors.white.withOpacity(0.2),
                                   width: 0.5,
                                 ),
                               ),
-                              child: Text(
+                              child: const Text(
                                 'Need help?',
                                 style: TextStyle(
-                                  color: _primaryLight,
+                                  color: Color(0xFFC87941),
                                   fontWeight: FontWeight.w600,
                                   fontSize: 13,
                                 ),
@@ -230,7 +192,7 @@ class _TenantLoginPageState extends State<TenantLoginPage>
                                 color: _primary.withOpacity(0.15),
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
-                                  color: _primary.withOpacity(0.35),
+                                  color: _primary.withOpacity(0.3),
                                   width: 0.8,
                                 ),
                               ),
@@ -240,16 +202,16 @@ class _TenantLoginPageState extends State<TenantLoginPage>
                                   Container(
                                     width: 6,
                                     height: 6,
-                                    decoration: BoxDecoration(
+                                    decoration: const BoxDecoration(
                                       color: _primary,
                                       shape: BoxShape.circle,
                                     ),
                                   ),
                                   const SizedBox(width: 6),
-                                  Text(
-                                    'Tenant Portal',
+                                  const Text(
+                                    'Landlord Portal',
                                     style: TextStyle(
-                                      color: _primaryLight,
+                                      color: _primary,
                                       fontSize: 11,
                                       fontWeight: FontWeight.w600,
                                       letterSpacing: 0.5,
@@ -273,7 +235,7 @@ class _TenantLoginPageState extends State<TenantLoginPage>
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              'Sign in to find your perfect home.',
+                              'Sign in to manage your properties.',
                               style: TextStyle(
                                 fontSize: 14,
                                 color: Colors.white.withOpacity(0.55),
@@ -292,10 +254,10 @@ class _TenantLoginPageState extends State<TenantLoginPage>
                         child: Container(
                           padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.06),
+                            color: Colors.white.withOpacity(0.07),
                             borderRadius: BorderRadius.circular(24),
                             border: Border.all(
-                              color: _primary.withOpacity(0.2),
+                              color: Colors.white.withOpacity(0.12),
                               width: 0.8,
                             ),
                           ),
@@ -307,7 +269,6 @@ class _TenantLoginPageState extends State<TenantLoginPage>
                                 controller: _emailController,
                                 hint: 'Email address',
                                 prefixIcon: Icons.mail_outline_rounded,
-                                accentColor: _primary,
                                 keyboardType: TextInputType.emailAddress,
                               ),
 
@@ -318,7 +279,6 @@ class _TenantLoginPageState extends State<TenantLoginPage>
                                 controller: _passwordController,
                                 hint: 'Password',
                                 prefixIcon: Icons.lock_outline_rounded,
-                                accentColor: _primary,
                                 obscureText: _obscurePassword,
                                 suffixIcon: GestureDetector(
                                   onTap: () => setState(() =>
@@ -341,7 +301,7 @@ class _TenantLoginPageState extends State<TenantLoginPage>
                                 child: Text(
                                   'Forgot password?',
                                   style: TextStyle(
-                                    color: _primaryLight.withOpacity(0.9),
+                                    color: _primary.withOpacity(0.9),
                                     fontSize: 13,
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -353,8 +313,6 @@ class _TenantLoginPageState extends State<TenantLoginPage>
                               // Login button
                               _PressableButton(
                                 label: 'Log in',
-                                primaryColor: _primary,
-                                glowColor: _primaryGlow,
                                 onTap: () {},
                               ),
                             ],
@@ -371,7 +329,7 @@ class _TenantLoginPageState extends State<TenantLoginPage>
                           children: [
                             Expanded(
                               child: Divider(
-                                color: Colors.white.withOpacity(0.12),
+                                color: Colors.white.withOpacity(0.15),
                                 thickness: 0.5,
                               ),
                             ),
@@ -381,14 +339,14 @@ class _TenantLoginPageState extends State<TenantLoginPage>
                               child: Text(
                                 'or continue with',
                                 style: TextStyle(
-                                  color: Colors.white.withOpacity(0.3),
+                                  color: Colors.white.withOpacity(0.35),
                                   fontSize: 12,
                                 ),
                               ),
                             ),
                             Expanded(
                               child: Divider(
-                                color: Colors.white.withOpacity(0.12),
+                                color: Colors.white.withOpacity(0.15),
                                 thickness: 0.5,
                               ),
                             ),
@@ -407,7 +365,6 @@ class _TenantLoginPageState extends State<TenantLoginPage>
                               child: _DarkSocialButton(
                                 icon: Icons.g_mobiledata_rounded,
                                 label: 'Google',
-                                accentColor: _primary,
                                 onTap: () {},
                               ),
                             ),
@@ -416,7 +373,6 @@ class _TenantLoginPageState extends State<TenantLoginPage>
                               child: _DarkSocialButton(
                                 icon: Icons.apple_rounded,
                                 label: 'Apple',
-                                accentColor: _primary,
                                 onTap: () {},
                               ),
                             ),
@@ -431,17 +387,17 @@ class _TenantLoginPageState extends State<TenantLoginPage>
                         position: _formSlide,
                         child: Center(
                           child: RichText(
-                            text: TextSpan(
+                            text: const TextSpan(
                               style: TextStyle(
                                 fontSize: 13,
-                                color: Colors.white.withOpacity(0.35),
+                                color: Colors.white38,
                               ),
                               children: [
-                                const TextSpan(text: "Don't have an account? "),
+                                TextSpan(text: "Don't have an account? "),
                                 TextSpan(
                                   text: 'Sign up',
                                   style: TextStyle(
-                                    color: _primaryLight,
+                                    color: _primary,
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
@@ -481,14 +437,9 @@ class _TenantLoginPageState extends State<TenantLoginPage>
 
 class _GlassIconButton extends StatelessWidget {
   final IconData icon;
-  final Color accentColor;
   final VoidCallback onTap;
 
-  const _GlassIconButton({
-    required this.icon,
-    required this.accentColor,
-    required this.onTap,
-  });
+  const _GlassIconButton({required this.icon, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -498,18 +449,14 @@ class _GlassIconButton extends StatelessWidget {
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: accentColor.withOpacity(0.1),
+          color: Colors.white.withOpacity(0.1),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: accentColor.withOpacity(0.25),
+            color: Colors.white.withOpacity(0.2),
             width: 0.5,
           ),
         ),
-        child: const Icon(
-          Icons.arrow_back_ios_new_rounded,
-          size: 18,
-          color: Colors.white,
-        ),
+        child: Icon(icon, size: 18, color: Colors.white),
       ),
     );
   }
@@ -521,7 +468,6 @@ class _DarkInputField extends StatelessWidget {
   final TextEditingController controller;
   final String hint;
   final IconData prefixIcon;
-  final Color accentColor;
   final bool obscureText;
   final Widget? suffixIcon;
   final TextInputType? keyboardType;
@@ -530,7 +476,6 @@ class _DarkInputField extends StatelessWidget {
     required this.controller,
     required this.hint,
     required this.prefixIcon,
-    required this.accentColor,
     this.obscureText = false,
     this.suffixIcon,
     this.keyboardType,
@@ -540,10 +485,10 @@ class _DarkInputField extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.06),
+        color: Colors.white.withOpacity(0.07),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: accentColor.withOpacity(0.2),
+          color: Colors.white.withOpacity(0.12),
           width: 0.8,
         ),
       ),
@@ -558,12 +503,12 @@ class _DarkInputField extends StatelessWidget {
         decoration: InputDecoration(
           hintText: hint,
           hintStyle: TextStyle(
-            color: Colors.white.withOpacity(0.28),
+            color: Colors.white.withOpacity(0.3),
             fontSize: 14,
           ),
           prefixIcon: Icon(
             prefixIcon,
-            color: accentColor.withOpacity(0.6),
+            color: Colors.white.withOpacity(0.35),
             size: 20,
           ),
           suffixIcon: suffixIcon,
@@ -582,16 +527,9 @@ class _DarkInputField extends StatelessWidget {
 
 class _PressableButton extends StatefulWidget {
   final String label;
-  final Color primaryColor;
-  final Color glowColor;
   final VoidCallback onTap;
 
-  const _PressableButton({
-    required this.label,
-    required this.primaryColor,
-    required this.glowColor,
-    required this.onTap,
-  });
+  const _PressableButton({required this.label, required this.onTap});
 
   @override
   State<_PressableButton> createState() => _PressableButtonState();
@@ -637,12 +575,12 @@ class _PressableButtonState extends State<_PressableButton>
           width: double.infinity,
           height: 52,
           decoration: BoxDecoration(
-            color: widget.primaryColor,
+            color: const Color(0xFFC87941),
             borderRadius: BorderRadius.circular(14),
             boxShadow: [
               BoxShadow(
-                color: widget.glowColor.withOpacity(0.4),
-                blurRadius: 18,
+                color: const Color(0xFFC87941).withOpacity(0.35),
+                blurRadius: 16,
                 offset: const Offset(0, 6),
               ),
             ],
@@ -669,13 +607,11 @@ class _PressableButtonState extends State<_PressableButton>
 class _DarkSocialButton extends StatefulWidget {
   final IconData icon;
   final String label;
-  final Color accentColor;
   final VoidCallback onTap;
 
   const _DarkSocialButton({
     required this.icon,
     required this.label,
-    required this.accentColor,
     required this.onTap,
   });
 
@@ -722,10 +658,10 @@ class _DarkSocialButtonState extends State<_DarkSocialButton>
         child: Container(
           height: 50,
           decoration: BoxDecoration(
-            color: widget.accentColor.withOpacity(0.08),
+            color: Colors.white.withOpacity(0.07),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: widget.accentColor.withOpacity(0.25),
+              color: Colors.white.withOpacity(0.15),
               width: 0.8,
             ),
           ),
