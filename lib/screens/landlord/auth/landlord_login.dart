@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'landlord_signup.dart';
+import '../dashboad/dashboad.dart';
 
 class LandlordLoginPage extends StatefulWidget {
   const LandlordLoginPage({super.key});
@@ -313,7 +315,13 @@ class _LandlordLoginPageState extends State<LandlordLoginPage>
                               // Login button
                               _PressableButton(
                                 label: 'Log in',
-                                onTap: () {},
+                                onTap: () {
+                                  Navigator.of(context).pushReplacement(
+                                    MaterialPageRoute(
+                                      builder: (_) => const LandlordDashboard(),
+                                    ),
+                                  );
+                                },
                               ),
                             ],
                           ),
@@ -386,22 +394,29 @@ class _LandlordLoginPageState extends State<LandlordLoginPage>
                       SlideTransition(
                         position: _formSlide,
                         child: Center(
-                          child: RichText(
-                            text: const TextSpan(
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Colors.white38,
-                              ),
-                              children: [
-                                TextSpan(text: "Don't have an account? "),
-                                TextSpan(
-                                  text: 'Sign up',
-                                  style: TextStyle(
-                                    color: _primary,
-                                    fontWeight: FontWeight.w700,
-                                  ),
+                          child: GestureDetector(
+                            onTap: () {
+                              Navigator.of(context).push(
+                                _slideRoute(const LandlordSignupPage()),
+                              );
+                            },
+                            child: RichText(
+                              text: const TextSpan(
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.white38,
                                 ),
-                              ],
+                                children: [
+                                  TextSpan(text: "Don't have an account? "),
+                                  TextSpan(
+                                    text: 'Sign up',
+                                    style: TextStyle(
+                                      color: _primary,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
@@ -431,6 +446,25 @@ class _LandlordLoginPageState extends State<LandlordLoginPage>
       ),
     );
   }
+}
+
+Route _slideRoute(Widget page) {
+  return PageRouteBuilder(
+    pageBuilder: (_, __, ___) => page,
+    transitionsBuilder: (_, animation, __, child) {
+      return SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(1, 0),
+          end: Offset.zero,
+        ).animate(CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+        )),
+        child: child,
+      );
+    },
+    transitionDuration: const Duration(milliseconds: 400),
+  );
 }
 
 // ── Glass icon button ─────────────────────────────────────────────────────────

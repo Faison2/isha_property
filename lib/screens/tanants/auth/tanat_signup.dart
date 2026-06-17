@@ -1,19 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'tanat_signup.dart';
+import 'tanat_login.dart';
 
-class TenantLoginPage extends StatefulWidget {
-  const TenantLoginPage({super.key});
+class TenantSignupPage extends StatefulWidget {
+  const TenantSignupPage({super.key});
 
   @override
-  State<TenantLoginPage> createState() => _TenantLoginPageState();
+  State<TenantSignupPage> createState() => _TenantSignupPageState();
 }
 
-class _TenantLoginPageState extends State<TenantLoginPage>
+class _TenantSignupPageState extends State<TenantSignupPage>
     with TickerProviderStateMixin {
+  final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _obscureConfirm = true;
+  bool _agreeTerms = false;
 
   late AnimationController _fadeController;
   late AnimationController _slideController;
@@ -21,7 +25,6 @@ class _TenantLoginPageState extends State<TenantLoginPage>
   late Animation<Offset> _headerSlide;
   late Animation<Offset> _formSlide;
 
-  // Purple/violet tenant theme
   static const Color _primary = Color(0xFF7B6FD0);
   static const Color _primaryLight = Color(0xFFAFA9EC);
   static const Color _primaryGlow = Color(0xFF5B50C8);
@@ -70,8 +73,10 @@ class _TenantLoginPageState extends State<TenantLoginPage>
   void dispose() {
     _fadeController.dispose();
     _slideController.dispose();
+    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -85,14 +90,11 @@ class _TenantLoginPageState extends State<TenantLoginPage>
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Hero image
           Image.asset(
             'assets/images/hero.jpg',
             fit: BoxFit.cover,
             alignment: Alignment.center,
           ),
-
-          // Base dark overlay
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -108,8 +110,6 @@ class _TenantLoginPageState extends State<TenantLoginPage>
               ),
             ),
           ),
-
-          // Purple tint overlay — distinguishes tenant theme
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -123,8 +123,6 @@ class _TenantLoginPageState extends State<TenantLoginPage>
               ),
             ),
           ),
-
-          // Purple bottom glow
           Positioned(
             bottom: 0,
             left: 0,
@@ -143,8 +141,6 @@ class _TenantLoginPageState extends State<TenantLoginPage>
               ),
             ),
           ),
-
-          // Ambient purple top-right glow
           Positioned(
             top: -60,
             right: -60,
@@ -162,8 +158,6 @@ class _TenantLoginPageState extends State<TenantLoginPage>
               ),
             ),
           ),
-
-          // Content
           FadeTransition(
             opacity: _fadeAnim,
             child: SafeArea(
@@ -175,8 +169,6 @@ class _TenantLoginPageState extends State<TenantLoginPage>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 12),
-
-                      // ── Top bar ──
                       SlideTransition(
                         position: _headerSlide,
                         child: Row(
@@ -187,41 +179,15 @@ class _TenantLoginPageState extends State<TenantLoginPage>
                               accentColor: _primary,
                               onTap: () => Navigator.of(context).pop(),
                             ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 7,
-                              ),
-                              decoration: BoxDecoration(
-                                color: _primary.withOpacity(0.12),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: _primary.withOpacity(0.3),
-                                  width: 0.5,
-                                ),
-                              ),
-                              child: Text(
-                                'Need help?',
-                                style: TextStyle(
-                                  color: _primaryLight,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ),
                           ],
                         ),
                       ),
-
-                      const SizedBox(height: 36),
-
-                      // ── Header ──
+                      const SizedBox(height: 24),
                       SlideTransition(
                         position: _headerSlide,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Badge
                             Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 12,
@@ -259,11 +225,9 @@ class _TenantLoginPageState extends State<TenantLoginPage>
                                 ],
                               ),
                             ),
-
                             const SizedBox(height: 14),
-
                             const Text(
-                              'Welcome\nback,',
+                              'Create your\naccount',
                               style: TextStyle(
                                 fontSize: 40,
                                 fontWeight: FontWeight.w800,
@@ -274,7 +238,7 @@ class _TenantLoginPageState extends State<TenantLoginPage>
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              'Sign in to find your perfect home.',
+                              'Start your journey to find the perfect home.',
                               style: TextStyle(
                                 fontSize: 14,
                                 color: Colors.white.withOpacity(0.55),
@@ -284,10 +248,7 @@ class _TenantLoginPageState extends State<TenantLoginPage>
                           ],
                         ),
                       ),
-
-                      const SizedBox(height: 36),
-
-                      // ── Form card ──
+                      const SizedBox(height: 28),
                       SlideTransition(
                         position: _formSlide,
                         child: Container(
@@ -303,7 +264,14 @@ class _TenantLoginPageState extends State<TenantLoginPage>
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Email
+                              _DarkInputField(
+                                controller: _nameController,
+                                hint: 'Full name',
+                                prefixIcon: Icons.person_outline_rounded,
+                                accentColor: _primary,
+                                keyboardType: TextInputType.name,
+                              ),
+                              const SizedBox(height: 12),
                               _DarkInputField(
                                 controller: _emailController,
                                 hint: 'Email address',
@@ -311,10 +279,7 @@ class _TenantLoginPageState extends State<TenantLoginPage>
                                 accentColor: _primary,
                                 keyboardType: TextInputType.emailAddress,
                               ),
-
                               const SizedBox(height: 12),
-
-                              // Password
                               _DarkInputField(
                                 controller: _passwordController,
                                 hint: 'Password',
@@ -323,7 +288,7 @@ class _TenantLoginPageState extends State<TenantLoginPage>
                                 obscureText: _obscurePassword,
                                 suffixIcon: GestureDetector(
                                   onTap: () => setState(() =>
-                                  _obscurePassword = !_obscurePassword),
+                                      _obscurePassword = !_obscurePassword),
                                   child: Icon(
                                     _obscurePassword
                                         ? Icons.visibility_off_outlined
@@ -333,27 +298,95 @@ class _TenantLoginPageState extends State<TenantLoginPage>
                                   ),
                                 ),
                               ),
-
-                              const SizedBox(height: 10),
-
-                              // Forgot password
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: Text(
-                                  'Forgot password?',
-                                  style: TextStyle(
-                                    color: _primaryLight.withOpacity(0.9),
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w500,
+                              const SizedBox(height: 12),
+                              _DarkInputField(
+                                controller: _confirmPasswordController,
+                                hint: 'Confirm password',
+                                prefixIcon: Icons.lock_outline_rounded,
+                                accentColor: _primary,
+                                obscureText: _obscureConfirm,
+                                suffixIcon: GestureDetector(
+                                  onTap: () => setState(() =>
+                                      _obscureConfirm = !_obscureConfirm),
+                                  child: Icon(
+                                    _obscureConfirm
+                                        ? Icons.visibility_off_outlined
+                                        : Icons.visibility_outlined,
+                                    color: Colors.white.withOpacity(0.4),
+                                    size: 20,
                                   ),
                                 ),
                               ),
-
+                              const SizedBox(height: 16),
+                              GestureDetector(
+                                onTap: () => setState(
+                                    () => _agreeTerms = !_agreeTerms),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 20,
+                                      height: 20,
+                                      decoration: BoxDecoration(
+                                        color: _agreeTerms
+                                            ? _primary
+                                            : Colors.transparent,
+                                        borderRadius:
+                                            BorderRadius.circular(5),
+                                        border: Border.all(
+                                          color: _agreeTerms
+                                              ? _primary
+                                              : Colors.white.withOpacity(0.3),
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                      child: _agreeTerms
+                                          ? const Icon(
+                                              Icons.check,
+                                              size: 14,
+                                              color: Colors.white,
+                                            )
+                                          : null,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: RichText(
+                                        text: TextSpan(
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color:
+                                                Colors.white.withOpacity(0.5),
+                                            height: 1.4,
+                                          ),
+                                          children: [
+                                            const TextSpan(
+                                              text:
+                                                  'I agree to the ',
+                                            ),
+                                            TextSpan(
+                                              text: 'Terms of Service',
+                                              style: TextStyle(
+                                                color: _primaryLight,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                            const TextSpan(text: ' and '),
+                                            TextSpan(
+                                              text: 'Privacy Policy',
+                                              style: TextStyle(
+                                                color: _primaryLight,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                               const SizedBox(height: 20),
-
-                              // Login button
                               _PressableButton(
-                                label: 'Log in',
+                                label: 'Create account',
                                 primaryColor: _primary,
                                 glowColor: _primaryGlow,
                                 onTap: () {},
@@ -362,10 +395,7 @@ class _TenantLoginPageState extends State<TenantLoginPage>
                           ),
                         ),
                       ),
-
                       const SizedBox(height: 24),
-
-                      // ── Divider ──
                       SlideTransition(
                         position: _formSlide,
                         child: Row(
@@ -378,7 +408,7 @@ class _TenantLoginPageState extends State<TenantLoginPage>
                             ),
                             Padding(
                               padding:
-                              const EdgeInsets.symmetric(horizontal: 14),
+                                  const EdgeInsets.symmetric(horizontal: 14),
                               child: Text(
                                 'or continue with',
                                 style: TextStyle(
@@ -396,10 +426,7 @@ class _TenantLoginPageState extends State<TenantLoginPage>
                           ],
                         ),
                       ),
-
                       const SizedBox(height: 16),
-
-                      // ── Social buttons ──
                       SlideTransition(
                         position: _formSlide,
                         child: Row(
@@ -424,17 +451,14 @@ class _TenantLoginPageState extends State<TenantLoginPage>
                           ],
                         ),
                       ),
-
-                      const SizedBox(height: 32),
-
-                      // ── Sign up ──
+                      const SizedBox(height: 28),
                       SlideTransition(
                         position: _formSlide,
                         child: Center(
                           child: GestureDetector(
                             onTap: () {
-                              Navigator.of(context).push(
-                                _slideRoute(const TenantSignupPage()),
+                              Navigator.of(context).pushReplacement(
+                                _slideRoute(const TenantLoginPage()),
                               );
                             },
                             child: RichText(
@@ -444,9 +468,10 @@ class _TenantLoginPageState extends State<TenantLoginPage>
                                   color: Colors.white.withOpacity(0.35),
                                 ),
                                 children: [
-                                  const TextSpan(text: "Don't have an account? "),
+                                  const TextSpan(
+                                      text: 'Already have an account? '),
                                   TextSpan(
-                                    text: 'Sign up',
+                                    text: 'Log in',
                                     style: TextStyle(
                                       color: _primaryLight,
                                       fontWeight: FontWeight.w700,
@@ -458,10 +483,7 @@ class _TenantLoginPageState extends State<TenantLoginPage>
                           ),
                         ),
                       ),
-
                       const SizedBox(height: 28),
-
-                      // Home bar
                       Center(
                         child: Container(
                           width: 120,
@@ -483,28 +505,26 @@ class _TenantLoginPageState extends State<TenantLoginPage>
       ),
     );
   }
-}
 
-Route _slideRoute(Widget page) {
-  return PageRouteBuilder(
-    pageBuilder: (_, __, ___) => page,
-    transitionsBuilder: (_, animation, __, child) {
-      return SlideTransition(
-        position: Tween<Offset>(
-          begin: const Offset(1, 0),
-          end: Offset.zero,
-        ).animate(CurvedAnimation(
-          parent: animation,
-          curve: Curves.easeOutCubic,
-        )),
-        child: child,
-      );
-    },
-    transitionDuration: const Duration(milliseconds: 400),
-  );
+  Route _slideRoute(Widget page) {
+    return PageRouteBuilder(
+      pageBuilder: (_, __, ___) => page,
+      transitionsBuilder: (_, animation, __, child) {
+        return SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(1, 0),
+            end: Offset.zero,
+          ).animate(CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOutCubic,
+          )),
+          child: child,
+        );
+      },
+      transitionDuration: const Duration(milliseconds: 400),
+    );
+  }
 }
-
-// ── Glass icon button ─────────────────────────────────────────────────────────
 
 class _GlassIconButton extends StatelessWidget {
   final IconData icon;
@@ -541,8 +561,6 @@ class _GlassIconButton extends StatelessWidget {
     );
   }
 }
-
-// ── Dark input field ──────────────────────────────────────────────────────────
 
 class _DarkInputField extends StatelessWidget {
   final TextEditingController controller;
@@ -604,8 +622,6 @@ class _DarkInputField extends StatelessWidget {
     );
   }
 }
-
-// ── Pressable login button ────────────────────────────────────────────────────
 
 class _PressableButton extends StatefulWidget {
   final String label;
@@ -690,8 +706,6 @@ class _PressableButtonState extends State<_PressableButton>
     );
   }
 }
-
-// ── Dark social button ────────────────────────────────────────────────────────
 
 class _DarkSocialButton extends StatefulWidget {
   final IconData icon;

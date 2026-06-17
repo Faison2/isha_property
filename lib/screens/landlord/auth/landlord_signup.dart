@@ -1,19 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'tanat_signup.dart';
+import 'landlord_login.dart';
 
-class TenantLoginPage extends StatefulWidget {
-  const TenantLoginPage({super.key});
+class LandlordSignupPage extends StatefulWidget {
+  const LandlordSignupPage({super.key});
 
   @override
-  State<TenantLoginPage> createState() => _TenantLoginPageState();
+  State<LandlordSignupPage> createState() => _LandlordSignupPageState();
 }
 
-class _TenantLoginPageState extends State<TenantLoginPage>
+class _LandlordSignupPageState extends State<LandlordSignupPage>
     with TickerProviderStateMixin {
+  final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _obscureConfirm = true;
+  bool _agreeTerms = false;
 
   late AnimationController _fadeController;
   late AnimationController _slideController;
@@ -21,10 +25,7 @@ class _TenantLoginPageState extends State<TenantLoginPage>
   late Animation<Offset> _headerSlide;
   late Animation<Offset> _formSlide;
 
-  // Purple/violet tenant theme
-  static const Color _primary = Color(0xFF7B6FD0);
-  static const Color _primaryLight = Color(0xFFAFA9EC);
-  static const Color _primaryGlow = Color(0xFF5B50C8);
+  static const Color _primary = Color(0xFFC87941);
 
   @override
   void initState() {
@@ -70,8 +71,10 @@ class _TenantLoginPageState extends State<TenantLoginPage>
   void dispose() {
     _fadeController.dispose();
     _slideController.dispose();
+    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -80,19 +83,16 @@ class _TenantLoginPageState extends State<TenantLoginPage>
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0818),
+      backgroundColor: const Color(0xFF1A0A00),
       resizeToAvoidBottomInset: true,
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Hero image
           Image.asset(
             'assets/images/hero.jpg',
             fit: BoxFit.cover,
             alignment: Alignment.center,
           ),
-
-          // Base dark overlay
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -100,70 +100,32 @@ class _TenantLoginPageState extends State<TenantLoginPage>
                 end: Alignment.bottomCenter,
                 stops: [0.0, 0.3, 0.6, 1.0],
                 colors: [
-                  Color(0x99000000),
+                  Color(0x88000000),
                   Color(0x55000000),
                   Color(0xBB000000),
-                  Color(0xF0000000),
+                  Color(0xEE000000),
                 ],
               ),
             ),
           ),
-
-          // Purple tint overlay — distinguishes tenant theme
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color(0x221A0D3D),
-                  Color(0x110D0818),
-                  Color(0x332D1F6B),
-                ],
-              ),
-            ),
-          ),
-
-          // Purple bottom glow
           Positioned(
             bottom: 0,
             left: 0,
             right: 0,
             child: Container(
-              height: size.height * 0.55,
+              height: size.height * 0.5,
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.bottomCenter,
                   end: Alignment.topCenter,
                   colors: [
-                    Color(0x777B6FD0),
-                    Color(0x007B6FD0),
+                    Color(0x66C87941),
+                    Color(0x00C87941),
                   ],
                 ),
               ),
             ),
           ),
-
-          // Ambient purple top-right glow
-          Positioned(
-            top: -60,
-            right: -60,
-            child: Container(
-              width: 220,
-              height: 220,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    _primary.withOpacity(0.25),
-                    _primary.withOpacity(0.0),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          // Content
           FadeTransition(
             opacity: _fadeAnim,
             child: SafeArea(
@@ -175,8 +137,6 @@ class _TenantLoginPageState extends State<TenantLoginPage>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 12),
-
-                      // ── Top bar ──
                       SlideTransition(
                         position: _headerSlide,
                         child: Row(
@@ -184,44 +144,17 @@ class _TenantLoginPageState extends State<TenantLoginPage>
                           children: [
                             _GlassIconButton(
                               icon: Icons.arrow_back_ios_new_rounded,
-                              accentColor: _primary,
                               onTap: () => Navigator.of(context).pop(),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 7,
-                              ),
-                              decoration: BoxDecoration(
-                                color: _primary.withOpacity(0.12),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: _primary.withOpacity(0.3),
-                                  width: 0.5,
-                                ),
-                              ),
-                              child: Text(
-                                'Need help?',
-                                style: TextStyle(
-                                  color: _primaryLight,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 13,
-                                ),
-                              ),
                             ),
                           ],
                         ),
                       ),
-
-                      const SizedBox(height: 36),
-
-                      // ── Header ──
+                      const SizedBox(height: 24),
                       SlideTransition(
                         position: _headerSlide,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Badge
                             Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 12,
@@ -231,7 +164,7 @@ class _TenantLoginPageState extends State<TenantLoginPage>
                                 color: _primary.withOpacity(0.15),
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
-                                  color: _primary.withOpacity(0.35),
+                                  color: _primary.withOpacity(0.3),
                                   width: 0.8,
                                 ),
                               ),
@@ -241,16 +174,16 @@ class _TenantLoginPageState extends State<TenantLoginPage>
                                   Container(
                                     width: 6,
                                     height: 6,
-                                    decoration: BoxDecoration(
+                                    decoration: const BoxDecoration(
                                       color: _primary,
                                       shape: BoxShape.circle,
                                     ),
                                   ),
                                   const SizedBox(width: 6),
-                                  Text(
-                                    'Tenant Portal',
+                                  const Text(
+                                    'Landlord Portal',
                                     style: TextStyle(
-                                      color: _primaryLight,
+                                      color: _primary,
                                       fontSize: 11,
                                       fontWeight: FontWeight.w600,
                                       letterSpacing: 0.5,
@@ -259,11 +192,9 @@ class _TenantLoginPageState extends State<TenantLoginPage>
                                 ],
                               ),
                             ),
-
                             const SizedBox(height: 14),
-
                             const Text(
-                              'Welcome\nback,',
+                              'Create your\naccount',
                               style: TextStyle(
                                 fontSize: 40,
                                 fontWeight: FontWeight.w800,
@@ -274,7 +205,7 @@ class _TenantLoginPageState extends State<TenantLoginPage>
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              'Sign in to find your perfect home.',
+                              'Start listing your properties in minutes.',
                               style: TextStyle(
                                 fontSize: 14,
                                 color: Colors.white.withOpacity(0.55),
@@ -284,46 +215,44 @@ class _TenantLoginPageState extends State<TenantLoginPage>
                           ],
                         ),
                       ),
-
-                      const SizedBox(height: 36),
-
-                      // ── Form card ──
+                      const SizedBox(height: 28),
                       SlideTransition(
                         position: _formSlide,
                         child: Container(
                           padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.06),
+                            color: Colors.white.withOpacity(0.07),
                             borderRadius: BorderRadius.circular(24),
                             border: Border.all(
-                              color: _primary.withOpacity(0.2),
+                              color: Colors.white.withOpacity(0.12),
                               width: 0.8,
                             ),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Email
+                              _DarkInputField(
+                                controller: _nameController,
+                                hint: 'Full name',
+                                prefixIcon: Icons.person_outline_rounded,
+                                keyboardType: TextInputType.name,
+                              ),
+                              const SizedBox(height: 12),
                               _DarkInputField(
                                 controller: _emailController,
                                 hint: 'Email address',
                                 prefixIcon: Icons.mail_outline_rounded,
-                                accentColor: _primary,
                                 keyboardType: TextInputType.emailAddress,
                               ),
-
                               const SizedBox(height: 12),
-
-                              // Password
                               _DarkInputField(
                                 controller: _passwordController,
                                 hint: 'Password',
                                 prefixIcon: Icons.lock_outline_rounded,
-                                accentColor: _primary,
                                 obscureText: _obscurePassword,
                                 suffixIcon: GestureDetector(
                                   onTap: () => setState(() =>
-                                  _obscurePassword = !_obscurePassword),
+                                      _obscurePassword = !_obscurePassword),
                                   child: Icon(
                                     _obscurePassword
                                         ? Icons.visibility_off_outlined
@@ -333,73 +262,132 @@ class _TenantLoginPageState extends State<TenantLoginPage>
                                   ),
                                 ),
                               ),
-
-                              const SizedBox(height: 10),
-
-                              // Forgot password
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: Text(
-                                  'Forgot password?',
-                                  style: TextStyle(
-                                    color: _primaryLight.withOpacity(0.9),
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w500,
+                              const SizedBox(height: 12),
+                              _DarkInputField(
+                                controller: _confirmPasswordController,
+                                hint: 'Confirm password',
+                                prefixIcon: Icons.lock_outline_rounded,
+                                obscureText: _obscureConfirm,
+                                suffixIcon: GestureDetector(
+                                  onTap: () => setState(() =>
+                                      _obscureConfirm = !_obscureConfirm),
+                                  child: Icon(
+                                    _obscureConfirm
+                                        ? Icons.visibility_off_outlined
+                                        : Icons.visibility_outlined,
+                                    color: Colors.white.withOpacity(0.4),
+                                    size: 20,
                                   ),
                                 ),
                               ),
-
+                              const SizedBox(height: 16),
+                              GestureDetector(
+                                onTap: () => setState(
+                                    () => _agreeTerms = !_agreeTerms),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 20,
+                                      height: 20,
+                                      decoration: BoxDecoration(
+                                        color: _agreeTerms
+                                            ? _primary
+                                            : Colors.transparent,
+                                        borderRadius:
+                                            BorderRadius.circular(5),
+                                        border: Border.all(
+                                          color: _agreeTerms
+                                              ? _primary
+                                              : Colors.white.withOpacity(0.3),
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                      child: _agreeTerms
+                                          ? const Icon(
+                                              Icons.check,
+                                              size: 14,
+                                              color: Colors.white,
+                                            )
+                                          : null,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: RichText(
+                                        text: TextSpan(
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color:
+                                                Colors.white.withOpacity(0.5),
+                                            height: 1.4,
+                                          ),
+                                          children: const [
+                                            TextSpan(
+                                              text:
+                                                  'I agree to the ',
+                                            ),
+                                            TextSpan(
+                                              text: 'Terms of Service',
+                                              style: TextStyle(
+                                                color: _primary,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                            TextSpan(text: ' and '),
+                                            TextSpan(
+                                              text: 'Privacy Policy',
+                                              style: TextStyle(
+                                                color: _primary,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                               const SizedBox(height: 20),
-
-                              // Login button
                               _PressableButton(
-                                label: 'Log in',
-                                primaryColor: _primary,
-                                glowColor: _primaryGlow,
+                                label: 'Create account',
                                 onTap: () {},
                               ),
                             ],
                           ),
                         ),
                       ),
-
                       const SizedBox(height: 24),
-
-                      // ── Divider ──
                       SlideTransition(
                         position: _formSlide,
                         child: Row(
                           children: [
                             Expanded(
                               child: Divider(
-                                color: Colors.white.withOpacity(0.12),
+                                color: Colors.white.withOpacity(0.15),
                                 thickness: 0.5,
                               ),
                             ),
                             Padding(
                               padding:
-                              const EdgeInsets.symmetric(horizontal: 14),
+                                  const EdgeInsets.symmetric(horizontal: 14),
                               child: Text(
                                 'or continue with',
                                 style: TextStyle(
-                                  color: Colors.white.withOpacity(0.3),
+                                  color: Colors.white.withOpacity(0.35),
                                   fontSize: 12,
                                 ),
                               ),
                             ),
                             Expanded(
                               child: Divider(
-                                color: Colors.white.withOpacity(0.12),
+                                color: Colors.white.withOpacity(0.15),
                                 thickness: 0.5,
                               ),
                             ),
                           ],
                         ),
                       ),
-
                       const SizedBox(height: 16),
-
-                      // ── Social buttons ──
                       SlideTransition(
                         position: _formSlide,
                         child: Row(
@@ -408,7 +396,6 @@ class _TenantLoginPageState extends State<TenantLoginPage>
                               child: _DarkSocialButton(
                                 icon: Icons.g_mobiledata_rounded,
                                 label: 'Google',
-                                accentColor: _primary,
                                 onTap: () {},
                               ),
                             ),
@@ -417,38 +404,35 @@ class _TenantLoginPageState extends State<TenantLoginPage>
                               child: _DarkSocialButton(
                                 icon: Icons.apple_rounded,
                                 label: 'Apple',
-                                accentColor: _primary,
                                 onTap: () {},
                               ),
                             ),
                           ],
                         ),
                       ),
-
-                      const SizedBox(height: 32),
-
-                      // ── Sign up ──
+                      const SizedBox(height: 28),
                       SlideTransition(
                         position: _formSlide,
                         child: Center(
                           child: GestureDetector(
                             onTap: () {
-                              Navigator.of(context).push(
-                                _slideRoute(const TenantSignupPage()),
+                              Navigator.of(context).pushReplacement(
+                                _slideRoute(const LandlordLoginPage()),
                               );
                             },
                             child: RichText(
-                              text: TextSpan(
+                              text: const TextSpan(
                                 style: TextStyle(
                                   fontSize: 13,
-                                  color: Colors.white.withOpacity(0.35),
+                                  color: Colors.white38,
                                 ),
                                 children: [
-                                  const TextSpan(text: "Don't have an account? "),
                                   TextSpan(
-                                    text: 'Sign up',
+                                      text: 'Already have an account? '),
+                                  TextSpan(
+                                    text: 'Log in',
                                     style: TextStyle(
-                                      color: _primaryLight,
+                                      color: _primary,
                                       fontWeight: FontWeight.w700,
                                     ),
                                   ),
@@ -458,10 +442,7 @@ class _TenantLoginPageState extends State<TenantLoginPage>
                           ),
                         ),
                       ),
-
                       const SizedBox(height: 28),
-
-                      // Home bar
                       Center(
                         child: Container(
                           width: 120,
@@ -483,39 +464,32 @@ class _TenantLoginPageState extends State<TenantLoginPage>
       ),
     );
   }
-}
 
-Route _slideRoute(Widget page) {
-  return PageRouteBuilder(
-    pageBuilder: (_, __, ___) => page,
-    transitionsBuilder: (_, animation, __, child) {
-      return SlideTransition(
-        position: Tween<Offset>(
-          begin: const Offset(1, 0),
-          end: Offset.zero,
-        ).animate(CurvedAnimation(
-          parent: animation,
-          curve: Curves.easeOutCubic,
-        )),
-        child: child,
-      );
-    },
-    transitionDuration: const Duration(milliseconds: 400),
-  );
+  Route _slideRoute(Widget page) {
+    return PageRouteBuilder(
+      pageBuilder: (_, __, ___) => page,
+      transitionsBuilder: (_, animation, __, child) {
+        return SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(1, 0),
+            end: Offset.zero,
+          ).animate(CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOutCubic,
+          )),
+          child: child,
+        );
+      },
+      transitionDuration: const Duration(milliseconds: 400),
+    );
+  }
 }
-
-// ── Glass icon button ─────────────────────────────────────────────────────────
 
 class _GlassIconButton extends StatelessWidget {
   final IconData icon;
-  final Color accentColor;
   final VoidCallback onTap;
 
-  const _GlassIconButton({
-    required this.icon,
-    required this.accentColor,
-    required this.onTap,
-  });
+  const _GlassIconButton({required this.icon, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -525,30 +499,23 @@ class _GlassIconButton extends StatelessWidget {
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: accentColor.withOpacity(0.1),
+          color: Colors.white.withOpacity(0.1),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: accentColor.withOpacity(0.25),
+            color: Colors.white.withOpacity(0.2),
             width: 0.5,
           ),
         ),
-        child: const Icon(
-          Icons.arrow_back_ios_new_rounded,
-          size: 18,
-          color: Colors.white,
-        ),
+        child: Icon(icon, size: 18, color: Colors.white),
       ),
     );
   }
 }
 
-// ── Dark input field ──────────────────────────────────────────────────────────
-
 class _DarkInputField extends StatelessWidget {
   final TextEditingController controller;
   final String hint;
   final IconData prefixIcon;
-  final Color accentColor;
   final bool obscureText;
   final Widget? suffixIcon;
   final TextInputType? keyboardType;
@@ -557,7 +524,6 @@ class _DarkInputField extends StatelessWidget {
     required this.controller,
     required this.hint,
     required this.prefixIcon,
-    required this.accentColor,
     this.obscureText = false,
     this.suffixIcon,
     this.keyboardType,
@@ -567,10 +533,10 @@ class _DarkInputField extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.06),
+        color: Colors.white.withOpacity(0.07),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: accentColor.withOpacity(0.2),
+          color: Colors.white.withOpacity(0.12),
           width: 0.8,
         ),
       ),
@@ -585,12 +551,12 @@ class _DarkInputField extends StatelessWidget {
         decoration: InputDecoration(
           hintText: hint,
           hintStyle: TextStyle(
-            color: Colors.white.withOpacity(0.28),
+            color: Colors.white.withOpacity(0.3),
             fontSize: 14,
           ),
           prefixIcon: Icon(
             prefixIcon,
-            color: accentColor.withOpacity(0.6),
+            color: Colors.white.withOpacity(0.35),
             size: 20,
           ),
           suffixIcon: suffixIcon,
@@ -605,20 +571,11 @@ class _DarkInputField extends StatelessWidget {
   }
 }
 
-// ── Pressable login button ────────────────────────────────────────────────────
-
 class _PressableButton extends StatefulWidget {
   final String label;
-  final Color primaryColor;
-  final Color glowColor;
   final VoidCallback onTap;
 
-  const _PressableButton({
-    required this.label,
-    required this.primaryColor,
-    required this.glowColor,
-    required this.onTap,
-  });
+  const _PressableButton({required this.label, required this.onTap});
 
   @override
   State<_PressableButton> createState() => _PressableButtonState();
@@ -664,12 +621,12 @@ class _PressableButtonState extends State<_PressableButton>
           width: double.infinity,
           height: 52,
           decoration: BoxDecoration(
-            color: widget.primaryColor,
+            color: const Color(0xFFC87941),
             borderRadius: BorderRadius.circular(14),
             boxShadow: [
               BoxShadow(
-                color: widget.glowColor.withOpacity(0.4),
-                blurRadius: 18,
+                color: const Color(0xFFC87941).withOpacity(0.35),
+                blurRadius: 16,
                 offset: const Offset(0, 6),
               ),
             ],
@@ -691,18 +648,14 @@ class _PressableButtonState extends State<_PressableButton>
   }
 }
 
-// ── Dark social button ────────────────────────────────────────────────────────
-
 class _DarkSocialButton extends StatefulWidget {
   final IconData icon;
   final String label;
-  final Color accentColor;
   final VoidCallback onTap;
 
   const _DarkSocialButton({
     required this.icon,
     required this.label,
-    required this.accentColor,
     required this.onTap,
   });
 
@@ -749,10 +702,10 @@ class _DarkSocialButtonState extends State<_DarkSocialButton>
         child: Container(
           height: 50,
           decoration: BoxDecoration(
-            color: widget.accentColor.withOpacity(0.08),
+            color: Colors.white.withOpacity(0.07),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: widget.accentColor.withOpacity(0.25),
+              color: Colors.white.withOpacity(0.15),
               width: 0.8,
             ),
           ),
