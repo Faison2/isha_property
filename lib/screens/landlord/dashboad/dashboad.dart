@@ -312,7 +312,7 @@ class _HomeTab extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
-        padding: const EdgeInsets.all(22),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: _C.headerCard,
           borderRadius: BorderRadius.circular(20),
@@ -321,7 +321,7 @@ class _HomeTab extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Hi, James',
+              'LandLord Dashboard',
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white),
             ),
             const SizedBox(height: 2),
