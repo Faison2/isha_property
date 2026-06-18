@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'tanat_signup.dart';
+import '../../tenant/dashboad/dashboad.dart';
 
 class TenantLoginPage extends StatefulWidget {
   const TenantLoginPage({super.key});
@@ -356,7 +357,13 @@ class _TenantLoginPageState extends State<TenantLoginPage>
                                 label: 'Log in',
                                 primaryColor: _primary,
                                 glowColor: _primaryGlow,
-                                onTap: () {},
+                                onTap: () {
+                                  Navigator.of(context).pushReplacement(
+                                    MaterialPageRoute(
+                                      builder: (_) => const TenantDashboard(),
+                                    ),
+                                  );
+                                },
                               ),
                             ],
                           ),
