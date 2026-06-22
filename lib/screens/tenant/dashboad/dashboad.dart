@@ -1,9 +1,11 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:stayconnect/screens/tenant/dashboad/property_tab.dart';
 import 'explore_tab.dart';
 import 'chat_tab.dart';
 import 'profile_tab.dart';
+
 
 // ── Brand colours ─────────────────────────────────────────────────────────────
 class _C {
@@ -31,12 +33,22 @@ class TenantDashboard extends StatefulWidget {
 class _TenantDashboardState extends State<TenantDashboard> {
   int _currentIndex = 0;
 
-  late final List<Widget> _tabs = [
-    const TenantHomeTab(),
-    const ExploreTab(),
-    const TenantChatTab(),
-    const TenantProfileTab(),
-  ];
+  // Holds a pending category filter to pass to ExploreTab
+  String? _pendingCategoryFilter;
+
+  void _goToExploreWithCategory(String category) {
+    setState(() {
+      _pendingCategoryFilter = category;
+      _currentIndex = 1;
+    });
+  }
+
+  void _clearPendingFilter() {
+    // Called by ExploreTab once it has consumed the filter
+    if (_pendingCategoryFilter != null) {
+      setState(() => _pendingCategoryFilter = null);
+    }
+  }
 
   @override
   void initState() {
@@ -50,6 +62,17 @@ class _TenantDashboardState extends State<TenantDashboard> {
 
   @override
   Widget build(BuildContext context) {
+    // Rebuild tabs list each time so ExploreTab gets fresh filter prop
+    final tabs = [
+      TenantHomeTab(onCategoryTap: _goToExploreWithCategory),
+      ExploreTab(
+        initialTypeFilter: _pendingCategoryFilter,
+        onFilterConsumed: _clearPendingFilter,
+      ),
+      const TenantChatTab(),
+      const TenantProfileTab(),
+    ];
+
     return Scaffold(
       backgroundColor: _C.bg,
       extendBody: true,
@@ -59,12 +82,16 @@ class _TenantDashboardState extends State<TenantDashboard> {
         switchOutCurve: Curves.easeIn,
         child: KeyedSubtree(
           key: ValueKey(_currentIndex),
-          child: _tabs[_currentIndex],
+          child: tabs[_currentIndex],
         ),
       ),
       bottomNavigationBar: _GlassNav(
         currentIndex: _currentIndex,
-        onTap: (i) => setState(() => _currentIndex = i),
+        onTap: (i) => setState(() {
+          _currentIndex = i;
+          // Clear pending filter if user manually switches away from Explore
+          if (i != 1) _pendingCategoryFilter = null;
+        }),
       ),
     );
   }
@@ -196,7 +223,12 @@ class _NavItem extends StatelessWidget {
 //  HOME TAB
 // ═════════════════════════════════════════════════════════════════════════════
 class TenantHomeTab extends StatefulWidget {
-  const TenantHomeTab({super.key});
+  /// Called when user taps a category chip. Passes the property type string
+  /// e.g. 'Apartment', 'House', 'Room', 'Shared'
+  final void Function(String category) onCategoryTap;
+
+  const TenantHomeTab({super.key, required this.onCategoryTap});
+
   @override
   State<TenantHomeTab> createState() => _TenantHomeTabState();
 }
@@ -364,8 +396,11 @@ class _TenantHomeTabState extends State<TenantHomeTab> {
                   children: [
                     const Text('Browse by Category',
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: _C.textDark)),
-                    Text('See all',
-                        style: TextStyle(fontSize: 13, color: _C.primary, fontWeight: FontWeight.w600)),
+                    GestureDetector(
+                      onTap: () => widget.onCategoryTap('All Types'),
+                      child: Text('See all',
+                          style: TextStyle(fontSize: 13, color: _C.primary, fontWeight: FontWeight.w600)),
+                    ),
                   ],
                 ),
               ),
@@ -378,11 +413,34 @@ class _TenantHomeTabState extends State<TenantHomeTab> {
                   child: ListView(
                     scrollDirection: Axis.horizontal,
                     padding: const EdgeInsets.symmetric(horizontal: 20),
-                    children: const [
-                      _CategoryChip(icon: Icons.apartment_rounded, label: 'Apartments', color: Color(0xFFEEECFA)),
-                      _CategoryChip(icon: Icons.house_rounded,      label: 'Houses',    color: Color(0xFFFFF0E6)),
-                      _CategoryChip(icon: Icons.bed_rounded,        label: 'Rooms',     color: Color(0xFFE9F5EE)),
-                      _CategoryChip(icon: Icons.people_rounded,     label: 'Shared',    color: Color(0xFFFFF7E0)),
+                    children: [
+                      _CategoryChip(
+                        icon: Icons.apartment_rounded,
+                        label: 'Apartments',
+                        color: const Color(0xFFEEECFA),
+                        // Maps to ExploreTab's _propertyTypes value
+                        onTap: () => widget.onCategoryTap('Apartment'),
+                      ),
+                      _CategoryChip(
+                        icon: Icons.house_rounded,
+                        label: 'Houses',
+                        color: const Color(0xFFFFF0E6),
+                        onTap: () => widget.onCategoryTap('House'),
+                      ),
+                      _CategoryChip(
+                        icon: Icons.bed_rounded,
+                        label: 'Rooms',
+                        color: const Color(0xFFE9F5EE),
+                        onTap: () => widget.onCategoryTap('Room'),
+                      ),
+                      _CategoryChip(
+                        icon: Icons.people_rounded,
+                        label: 'Shared',
+                        color: const Color(0xFFFFF7E0),
+                        // No exact match in data — opens Explore unfiltered
+                        // so user can see all & browse
+                        onTap: () => widget.onCategoryTap('All Types'),
+                      ),
                     ],
                   ),
                 ),
@@ -408,7 +466,7 @@ class _TenantHomeTabState extends State<TenantHomeTab> {
             // ── Property cards ────────────────────────────────────────────
             SliverList(
               delegate: SliverChildListDelegate([
-                const _PropertyCard(
+                _PropertyCard(
                   imagePath: 'assets/images/property1.jpg',
                   title: '2BHK Apartment',
                   location: 'Sunset Road, Nairobi',
@@ -416,8 +474,9 @@ class _TenantHomeTabState extends State<TenantHomeTab> {
                   beds: '2 Bed',
                   baths: '2 Bath',
                   tag: 'Furnished',
+                  listing: sampleListings[0],
                 ),
-                const _PropertyCard(
+                _PropertyCard(
                   imagePath: 'assets/images/property2.jpg',
                   title: 'Spacious Room',
                   location: 'Westlands, Nairobi',
@@ -426,7 +485,7 @@ class _TenantHomeTabState extends State<TenantHomeTab> {
                   baths: '1 Bath',
                   tag: 'Self-contained',
                 ),
-                const _PropertyCard(
+                _PropertyCard(
                   imagePath: 'assets/images/property3.jpg',
                   title: 'Modern Studio',
                   location: 'Kilimani, Nairobi',
@@ -434,6 +493,7 @@ class _TenantHomeTabState extends State<TenantHomeTab> {
                   beds: '1 Bed',
                   baths: '1 Bath',
                   tag: 'Furnished',
+                  listing: sampleListings[1],
                 ),
                 const SizedBox(height: 100),
               ]),
@@ -470,7 +530,6 @@ class _HeroBannerSlide extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            // ── Rich diagonal gradient background ────────────────────────
             Container(
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
@@ -478,59 +537,31 @@ class _HeroBannerSlide extends StatelessWidget {
                   end: Alignment.bottomRight,
                   stops: [0.0, 0.45, 0.75, 1.0],
                   colors: [
-                    Color(0xFF4A3FA8), // deep indigo
-                    Color(0xFF7B6FD0), // brand purple
-                    Color(0xFFAA8FE0), // soft violet
-                    Color(0xFFD4A8F0), // lavender fade
+                    Color(0xFF4A3FA8),
+                    Color(0xFF7B6FD0),
+                    Color(0xFFAA8FE0),
+                    Color(0xFFD4A8F0),
                   ],
                 ),
               ),
             ),
-
-            // ── Decorative circles (depth / atmosphere) ──────────────────
             Positioned(
-              top: -30,
-              right: 100,
-              child: Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withOpacity(0.07),
-                ),
-              ),
+              top: -30, right: 100,
+              child: Container(width: 120, height: 120,
+                  decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withOpacity(0.07))),
             ),
             Positioned(
-              bottom: -20,
-              right: 60,
-              child: Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withOpacity(0.05),
-                ),
-              ),
+              bottom: -20, right: 60,
+              child: Container(width: 80, height: 80,
+                  decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withOpacity(0.05))),
             ),
             Positioned(
-              top: 20,
-              left: -10,
-              child: Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withOpacity(0.06),
-                ),
-              ),
+              top: 20, left: -10,
+              child: Container(width: 50, height: 50,
+                  decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withOpacity(0.06))),
             ),
-
-            // ── Image panel with slanted clip on left edge ───────────────
             Positioned(
-              right: 0,
-              top: 0,
-              bottom: 0,
-              width: 170,
+              right: 0, top: 0, bottom: 0, width: 170,
               child: ClipPath(
                 clipper: _SlantClipper(),
                 child: Image.asset(
@@ -551,42 +582,27 @@ class _HeroBannerSlide extends StatelessWidget {
                 ),
               ),
             ),
-
-            // ── Gradient fade overlay on image (blends into bg) ──────────
             Positioned(
-              right: 0,
-              top: 0,
-              bottom: 0,
-              width: 200,
+              right: 0, top: 0, bottom: 0, width: 200,
               child: Container(
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.centerLeft,
                     end: Alignment.centerRight,
                     stops: [0.0, 0.35, 1.0],
-                    colors: [
-                      Color(0xFF7B6FD0), // matches mid gradient — seamless blend
-                      Colors.transparent,
-                      Colors.transparent,
-                    ],
+                    colors: [Color(0xFF7B6FD0), Colors.transparent, Colors.transparent],
                   ),
                 ),
               ),
             ),
-
-            // ── Text content ─────────────────────────────────────────────
             Positioned(
-              left: 0,
-              top: 0,
-              bottom: 0,
-              right: 140,
+              left: 0, top: 0, bottom: 0, right: 140,
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 20, 8, 20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // eyebrow pill
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
@@ -594,31 +610,18 @@ class _HeroBannerSlide extends StatelessWidget {
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(color: Colors.white.withOpacity(0.25), width: 0.8),
                       ),
-                      child: const Text(
-                        '✦  Featured',
-                        style: TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.w600, letterSpacing: 0.5),
-                      ),
+                      child: const Text('✦  Featured',
+                          style: TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.w600, letterSpacing: 0.5)),
                     ),
                     const SizedBox(height: 10),
-                    Text(
-                      headline,
-                      style: const TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                        height: 1.25,
-                        shadows: [Shadow(color: Color(0x40000000), blurRadius: 8)],
-                      ),
-                    ),
+                    Text(headline,
+                        style: const TextStyle(
+                          fontSize: 17, fontWeight: FontWeight.w800, color: Colors.white,
+                          height: 1.25, shadows: [Shadow(color: Color(0x40000000), blurRadius: 8)],
+                        )),
                     const SizedBox(height: 5),
-                    Text(
-                      sub,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.white.withOpacity(0.75),
-                        height: 1.4,
-                      ),
-                    ),
+                    Text(sub,
+                        style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.75), height: 1.4)),
                     const SizedBox(height: 14),
                     GestureDetector(
                       onTap: () {},
@@ -627,22 +630,10 @@ class _HeroBannerSlide extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(10),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.18),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
+                          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.18), blurRadius: 12, offset: const Offset(0, 4))],
                         ),
-                        child: Text(
-                          buttonLabel,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF4A3FA8),
-                          ),
-                        ),
+                        child: Text(buttonLabel,
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF4A3FA8))),
                       ),
                     ),
                   ],
@@ -656,15 +647,14 @@ class _HeroBannerSlide extends StatelessWidget {
   }
 }
 
-// Clips the image panel so its left edge is a diagonal slant
 class _SlantClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
     final path = Path();
-    path.moveTo(36, 0);       // slant starts 36px in from left at top
+    path.moveTo(36, 0);
     path.lineTo(size.width, 0);
     path.lineTo(size.width, size.height);
-    path.lineTo(0, size.height); // bottom-left flush
+    path.lineTo(0, size.height);
     path.close();
     return path;
   }
@@ -674,14 +664,20 @@ class _SlantClipper extends CustomClipper<Path> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Category chip
+//  Category chip — now tappable
 // ─────────────────────────────────────────────────────────────────────────────
 class _CategoryChip extends StatelessWidget {
   final IconData icon;
   final String label;
   final Color color;
+  final VoidCallback onTap;
 
-  const _CategoryChip({required this.icon, required this.label, required this.color});
+  const _CategoryChip({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
 
   Color get _iconColor {
     if (color == const Color(0xFFEEECFA)) return const Color(0xFF7B6FD0);
@@ -692,18 +688,32 @@ class _CategoryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 80,
-      margin: const EdgeInsets.only(right: 12),
-      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(16)),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 26, color: _iconColor),
-          const SizedBox(height: 6),
-          Text(label,
-              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: _C.textDark)),
-        ],
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        width: 80,
+        margin: const EdgeInsets.only(right: 12),
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: _iconColor.withOpacity(0.15),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 26, color: _iconColor),
+            const SizedBox(height: 6),
+            Text(label,
+                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: _C.textDark)),
+          ],
+        ),
       ),
     );
   }
@@ -720,6 +730,7 @@ class _PropertyCard extends StatelessWidget {
   final String beds;
   final String baths;
   final String tag;
+  final PropertyListing? listing;
 
   const _PropertyCard({
     required this.imagePath,
@@ -729,96 +740,89 @@ class _PropertyCard extends StatelessWidget {
     required this.beds,
     required this.baths,
     required this.tag,
+    this.listing,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(20, 0, 20, 14),
-      decoration: BoxDecoration(
-        color: _C.cardBg,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 3),
+    return GestureDetector(
+        onTap: listing != null
+            ? () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => PropertyDetailScreen(listing: listing!)),
+        )
+            : null,
+        child: Container(
+          margin: const EdgeInsets.fromLTRB(20, 0, 20, 14),
+          decoration: BoxDecoration(
+            color: _C.cardBg,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 12, offset: const Offset(0, 3)),
+            ],
           ),
-        ],
-      ),
-      child: Row(
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(16),
-              bottomLeft: Radius.circular(16),
-            ),
-            child: Image.asset(
-              imagePath,
-              width: 110,
-              height: 110,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                width: 110,
-                height: 110,
-                color: const Color(0xFFDDDAF5),
-                child: const Icon(Icons.apartment_rounded, size: 36, color: Colors.white54),
+          child: Row(
+            children: [
+              ClipRRect(
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  bottomLeft: Radius.circular(16),
+                ),
+                child: Image.asset(
+                  imagePath,
+                  width: 110, height: 110, fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    width: 110, height: 110,
+                    color: const Color(0xFFDDDAF5),
+                    child: const Icon(Icons.apartment_rounded, size: 36, color: Colors.white54),
+                  ),
+                ),
               ),
-            ),
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: Text(title,
-                            style: const TextStyle(
-                                fontSize: 14, fontWeight: FontWeight.w700, color: _C.textDark)),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(title,
+                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: _C.textDark)),
+                          ),
+                          const Icon(Icons.favorite_border_rounded, size: 20, color: _C.textGrey),
+                        ],
                       ),
-                      const Icon(Icons.favorite_border_rounded, size: 20, color: _C.textGrey),
+                      const SizedBox(height: 2),
+                      Text(location, style: const TextStyle(fontSize: 11, color: _C.textGrey)),
+                      const SizedBox(height: 6),
+                      RichText(
+                        text: TextSpan(
+                          children: [
+                            TextSpan(text: price,
+                                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: _C.textDark)),
+                            const TextSpan(text: ' / month',
+                                style: TextStyle(fontSize: 11, color: _C.textGrey)),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          _Pill(icon: Icons.bed_rounded, label: beds),
+                          const SizedBox(width: 8),
+                          _Pill(icon: Icons.bathtub_outlined, label: baths),
+                          const SizedBox(width: 8),
+                          _Pill(icon: Icons.chair_rounded, label: tag),
+                        ],
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 2),
-                  Text(location,
-                      style: const TextStyle(fontSize: 11, color: _C.textGrey)),
-                  const SizedBox(height: 6),
-                  RichText(
-                    text: TextSpan(
-                      children: [
-                        TextSpan(
-                          text: price,
-                          style: const TextStyle(
-                              fontSize: 15, fontWeight: FontWeight.w800, color: _C.textDark),
-                        ),
-                        const TextSpan(
-                          text: ' / month',
-                          style: TextStyle(fontSize: 11, color: _C.textGrey),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      _Pill(icon: Icons.bed_rounded, label: beds),
-                      const SizedBox(width: 8),
-                      _Pill(icon: Icons.bathtub_outlined, label: baths),
-                      const SizedBox(width: 8),
-                      _Pill(icon: Icons.chair_rounded, label: tag),
-                    ],
-                  ),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
-    );
-  }
+        ));
+    }
 }
 
 class _Pill extends StatelessWidget {
@@ -832,9 +836,7 @@ class _Pill extends StatelessWidget {
       children: [
         Icon(icon, size: 12, color: _C.textGrey),
         const SizedBox(width: 3),
-        Text(label,
-            style: const TextStyle(
-                fontSize: 10, color: _C.textGrey, fontWeight: FontWeight.w500)),
+        Text(label, style: const TextStyle(fontSize: 10, color: _C.textGrey, fontWeight: FontWeight.w500)),
       ],
     );
   }

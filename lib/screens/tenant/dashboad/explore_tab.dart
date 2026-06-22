@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:stayconnect/screens/tenant/dashboad/property_tab.dart';
+
 
 class _C {
   static const bg          = Color(0xFFF5F4FB);
@@ -15,7 +17,7 @@ class _C {
   static const inputBorder = Color(0xFFE0DCF5);
 }
 
-// ── Location data (mirrors home tab) ──────────────────────────────────────────
+// ── Location data ─────────────────────────────────────────────────────────────
 class _City {
   final String name;
   final String emoji;
@@ -64,7 +66,21 @@ const _properties = [
 //  EXPLORE TAB
 // ─────────────────────────────────────────────────────────────────────────────
 class ExploreTab extends StatefulWidget {
-  const ExploreTab({super.key});
+  /// Optional type filter pre-applied when navigating from Home categories.
+  /// Matches values in [_propertyTypes] e.g. 'Apartment', 'House', 'Room'.
+  /// Pass 'All Types' or null to show everything.
+  final String? initialTypeFilter;
+
+  /// Called once the widget has consumed [initialTypeFilter] so the parent
+  /// can clear it (avoids re-applying on hot reload / revisit).
+  final VoidCallback? onFilterConsumed;
+
+  const ExploreTab({
+    super.key,
+    this.initialTypeFilter,
+    this.onFilterConsumed,
+  });
+
   @override
   State<ExploreTab> createState() => _ExploreTabState();
 }
@@ -73,39 +89,72 @@ class _ExploreTabState extends State<ExploreTab> {
   final _searchCtrl = TextEditingController();
   String _query = '';
 
-  int _selectedCityIndex   = 0; // 0 = "All Cities"
+  int _selectedCityIndex   = 0;
   int _selectedSuburbIndex = 0;
   int _selectedTypeIndex   = 0;
 
   bool _showFilters = false;
 
-  // city 0 means "All Cities"
   static const _allCity = _City(name: 'All Cities', emoji: '🌍', suburbs: ['All Areas']);
   List<_City> get _cityList => [_allCity, ..._cities];
   _City get _currentCity => _cityList[_selectedCityIndex];
 
+  @override
+  void initState() {
+    super.initState();
+    _applyInitialFilter();
+  }
+
+  @override
+  void didUpdateWidget(ExploreTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Re-apply if a new filter arrived (user tapped a different category)
+    if (widget.initialTypeFilter != null &&
+        widget.initialTypeFilter != oldWidget.initialTypeFilter) {
+      _applyInitialFilter();
+    }
+  }
+
+  void _applyInitialFilter() {
+    final filter = widget.initialTypeFilter;
+    if (filter == null) return;
+
+    final idx = _propertyTypes.indexOf(filter);
+
+    // Apply the filter to local state immediately (safe — we're in initState
+    // or didUpdateWidget, not inside build itself)
+    _selectedTypeIndex   = idx >= 0 ? idx : 0;
+    _selectedCityIndex   = 0;
+    _selectedSuburbIndex = 0;
+    _query               = '';
+    _searchCtrl.clear();
+    _showFilters         = false;
+
+    // Notify the parent AFTER the current build frame completes.
+    // Calling setState on TenantDashboard synchronously here would trigger
+    // "setState() called during build" because ExploreTab is still building.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) widget.onFilterConsumed?.call();
+    });
+  }
+
   List<_PropertyItem> get _filtered {
     var result = _properties.toList();
 
-    // city filter
     if (_selectedCityIndex > 0) {
       final cityName = _currentCity.name;
       result = result.where((p) => p.city == cityName).toList();
-
-      // suburb filter (only when a real city is selected)
       if (_selectedSuburbIndex > 0) {
         final suburb = _currentCity.suburbs[_selectedSuburbIndex];
         result = result.where((p) => p.suburb == suburb).toList();
       }
     }
 
-    // type filter
     if (_selectedTypeIndex > 0) {
       final type = _propertyTypes[_selectedTypeIndex];
       result = result.where((p) => p.type == type).toList();
     }
 
-    // text search
     if (_query.isNotEmpty) {
       final q = _query.toLowerCase();
       result = result.where((p) =>
@@ -128,7 +177,8 @@ class _ExploreTabState extends State<ExploreTab> {
   }
 
   bool get _hasActiveFilter =>
-      _selectedCityIndex > 0 || _selectedSuburbIndex > 0 || _selectedTypeIndex > 0 || _query.isNotEmpty;
+      _selectedCityIndex > 0 || _selectedSuburbIndex > 0 ||
+          _selectedTypeIndex > 0 || _query.isNotEmpty;
 
   void _resetFilters() => setState(() {
     _selectedCityIndex   = 0;
@@ -169,14 +219,41 @@ class _ExploreTabState extends State<ExploreTab> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Explore', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: _C.text)),
+                      const Text('Explore',
+                          style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: _C.text)),
                       const SizedBox(height: 2),
                       Text('${filtered.length} of ${_properties.length} properties',
                           style: const TextStyle(fontSize: 13, color: _C.textSub)),
                     ],
                   ),
                   const Spacer(),
-                  // filter toggle button
+                  // Active type badge — shows which category was tapped
+                  if (_selectedTypeIndex > 0 && !_showFilters) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: _C.primaryLo,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.category_rounded, size: 13, color: _C.primary),
+                          const SizedBox(width: 5),
+                          Text(
+                            _propertyTypes[_selectedTypeIndex],
+                            style: const TextStyle(fontSize: 12, color: _C.primary, fontWeight: FontWeight.w700),
+                          ),
+                          const SizedBox(width: 6),
+                          GestureDetector(
+                            onTap: () => setState(() => _selectedTypeIndex = 0),
+                            child: const Icon(Icons.close_rounded, size: 13, color: _C.primary),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  // Filter toggle button
                   GestureDetector(
                     onTap: () => setState(() => _showFilters = !_showFilters),
                     child: AnimatedContainer(
@@ -186,13 +263,18 @@ class _ExploreTabState extends State<ExploreTab> {
                         color: _showFilters ? _C.primary : Colors.white,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: _showFilters ? _C.primary : _C.inputBorder),
-                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
+                        boxShadow: [
+                          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))
+                        ],
                       ),
                       child: Row(
                         children: [
                           Icon(Icons.tune_rounded, size: 16, color: _showFilters ? Colors.white : _C.primary),
                           const SizedBox(width: 6),
-                          Text('Filter', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: _showFilters ? Colors.white : _C.primary)),
+                          Text('Filter',
+                              style: TextStyle(
+                                  fontSize: 12, fontWeight: FontWeight.w700,
+                                  color: _showFilters ? Colors.white : _C.primary)),
                           if (_hasActiveFilter) ...[
                             const SizedBox(width: 6),
                             Container(
@@ -218,7 +300,9 @@ class _ExploreTabState extends State<ExploreTab> {
                   color: _C.bgCard,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: _C.inputBorder),
-                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))],
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))
+                  ],
                 ),
                 child: TextField(
                   controller: _searchCtrl,
@@ -241,34 +325,29 @@ class _ExploreTabState extends State<ExploreTab> {
               ),
             ),
 
-            // ── Collapsible filter panel ───────────────────────────────────
+            // ── Collapsible filter panel ──────────────────────────────────
             AnimatedSize(
               duration: const Duration(milliseconds: 280),
               curve: Curves.easeInOut,
               child: _showFilters ? _buildFilterPanel() : const SizedBox.shrink(),
             ),
 
-            // ── Active filter pill (when filters applied & panel closed) ───
-            if (!_showFilters && _hasActiveFilter)
+            // ── Active filter pill (panel closed) ─────────────────────────
+            if (!_showFilters && _hasActiveFilter && _selectedTypeIndex == 0)
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: _C.primaryLo,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
+                  decoration: BoxDecoration(color: _C.primaryLo, borderRadius: BorderRadius.circular(20)),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(Icons.filter_list_rounded, size: 14, color: _C.primary),
                       const SizedBox(width: 6),
                       Flexible(
-                        child: Text(
-                          _activeFilterSummary,
-                          style: const TextStyle(fontSize: 12, color: _C.primary, fontWeight: FontWeight.w600),
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                        child: Text(_activeFilterSummary,
+                            style: const TextStyle(fontSize: 12, color: _C.primary, fontWeight: FontWeight.w600),
+                            overflow: TextOverflow.ellipsis),
                       ),
                       const SizedBox(width: 8),
                       GestureDetector(
@@ -306,12 +385,13 @@ class _ExploreTabState extends State<ExploreTab> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 16, offset: const Offset(0, 4))],
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 16, offset: const Offset(0, 4))
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // header
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
             child: Row(
@@ -322,18 +402,19 @@ class _ExploreTabState extends State<ExploreTab> {
                   child: const Icon(Icons.location_on_rounded, size: 16, color: _C.primary),
                 ),
                 const SizedBox(width: 10),
-                const Text('Filter by Location', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: _C.text)),
+                const Text('Filter by Location',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: _C.text)),
                 const Spacer(),
                 if (_hasActiveFilter)
                   GestureDetector(
                     onTap: _resetFilters,
-                    child: Text('Clear all', style: TextStyle(fontSize: 12, color: _C.amber, fontWeight: FontWeight.w700)),
+                    child: Text('Clear all',
+                        style: TextStyle(fontSize: 12, color: _C.amber, fontWeight: FontWeight.w700)),
                   ),
               ],
             ),
           ),
 
-          // ── City ───────────────────────────────────────────────────────
           _FilterLabel('City'),
           SizedBox(
             height: 36,
@@ -352,14 +433,18 @@ class _ExploreTabState extends State<ExploreTab> {
                     decoration: BoxDecoration(
                       color: selected ? _C.primary : _C.inputBg,
                       borderRadius: BorderRadius.circular(20),
-                      boxShadow: selected ? [BoxShadow(color: _C.primary.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 2))] : null,
+                      boxShadow: selected
+                          ? [BoxShadow(color: _C.primary.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 2))]
+                          : null,
                     ),
                     child: Row(
                       children: [
                         Text(_cityList[i].emoji, style: const TextStyle(fontSize: 12)),
                         const SizedBox(width: 5),
                         Text(_cityList[i].name,
-                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: selected ? Colors.white : _C.textSub)),
+                            style: TextStyle(
+                                fontSize: 12, fontWeight: FontWeight.w600,
+                                color: selected ? Colors.white : _C.textSub)),
                       ],
                     ),
                   ),
@@ -370,7 +455,6 @@ class _ExploreTabState extends State<ExploreTab> {
 
           const SizedBox(height: 14),
 
-          // ── Suburb ─────────────────────────────────────────────────────
           _FilterLabel('Neighbourhood'),
           SizedBox(
             height: 36,
@@ -394,7 +478,9 @@ class _ExploreTabState extends State<ExploreTab> {
                           ? _C.amber
                           : const Color(0xFFFFF6EF),
                       borderRadius: BorderRadius.circular(20),
-                      boxShadow: (enabled && selected) ? [BoxShadow(color: _C.amber.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 2))] : null,
+                      boxShadow: (enabled && selected)
+                          ? [BoxShadow(color: _C.amber.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 2))]
+                          : null,
                     ),
                     child: Text(
                       _currentCity.suburbs[i],
@@ -411,7 +497,6 @@ class _ExploreTabState extends State<ExploreTab> {
 
           const SizedBox(height: 14),
 
-          // ── Property Type ───────────────────────────────────────────────
           _FilterLabel('Property Type'),
           SizedBox(
             height: 36,
@@ -432,7 +517,9 @@ class _ExploreTabState extends State<ExploreTab> {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(_propertyTypes[i],
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: selected ? Colors.white : _C.textSub)),
+                        style: TextStyle(
+                            fontSize: 12, fontWeight: FontWeight.w600,
+                            color: selected ? Colors.white : _C.textSub)),
                   ),
                 );
               },
@@ -441,7 +528,6 @@ class _ExploreTabState extends State<ExploreTab> {
 
           const SizedBox(height: 14),
 
-          // ── Active summary + apply ──────────────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
             child: Container(
@@ -452,18 +538,17 @@ class _ExploreTabState extends State<ExploreTab> {
                   const Icon(Icons.filter_list_rounded, size: 16, color: _C.primary),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text(
-                      _activeFilterSummary,
-                      style: const TextStyle(fontSize: 12, color: _C.primary, fontWeight: FontWeight.w600),
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                    child: Text(_activeFilterSummary,
+                        style: const TextStyle(fontSize: 12, color: _C.primary, fontWeight: FontWeight.w600),
+                        overflow: TextOverflow.ellipsis),
                   ),
                   GestureDetector(
                     onTap: () => setState(() => _showFilters = false),
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                       decoration: BoxDecoration(color: _C.primary, borderRadius: BorderRadius.circular(10)),
-                      child: const Text('Apply', style: TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w700)),
+                      child: const Text('Apply',
+                          style: TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w700)),
                     ),
                   ),
                 ],
@@ -486,16 +571,19 @@ class _ExploreTabState extends State<ExploreTab> {
             child: const Icon(Icons.search_off_rounded, size: 36, color: _C.primary),
           ),
           const SizedBox(height: 18),
-          const Text('No properties found', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: _C.text)),
+          const Text('No properties found',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: _C.text)),
           const SizedBox(height: 6),
-          const Text('Try adjusting your search or filters', style: TextStyle(fontSize: 13, color: _C.textSub)),
+          const Text('Try adjusting your search or filters',
+              style: TextStyle(fontSize: 13, color: _C.textSub)),
           const SizedBox(height: 20),
           GestureDetector(
             onTap: _resetFilters,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               decoration: BoxDecoration(color: _C.primary, borderRadius: BorderRadius.circular(14)),
-              child: const Text('Clear Filters', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white)),
+              child: const Text('Clear Filters',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white)),
             ),
           ),
         ],
@@ -511,7 +599,10 @@ class _FilterLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.only(left: 16, bottom: 6),
-    child: Text(text, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: _C.textSub.withOpacity(0.8), letterSpacing: 0.4)),
+    child: Text(text,
+        style: TextStyle(
+            fontSize: 11, fontWeight: FontWeight.w600,
+            color: _C.textSub.withOpacity(0.8), letterSpacing: 0.4)),
   );
 }
 
@@ -544,105 +635,118 @@ class _PropertyCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: Container(
-        decoration: BoxDecoration(
-          color: _C.bgCard,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 14, offset: const Offset(0, 3))],
-        ),
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(14),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // icon thumbnail
-                  Container(
-                    width: 70, height: 70,
-                    decoration: BoxDecoration(
-                      color: _typeColor.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Icon(_typeIcon, size: 30, color: _typeColor),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(child: Text(property.title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: _C.text))),
-                            const Icon(Icons.favorite_outline_rounded, size: 20, color: _C.textLight),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        // type badge
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: _typeColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(property.type, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: _typeColor)),
-                        ),
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            const Icon(Icons.location_on_rounded, size: 13, color: _C.primary),
-                            const SizedBox(width: 3),
-                            Text('${property.suburb}, ${property.city}',
-                                style: const TextStyle(fontSize: 12, color: _C.textSub)),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            Divider(height: 1, indent: 14, endIndent: 14, color: _C.divider),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              child: Row(
-                children: [
-                  if (property.beds > 0) ...[
-                    _Chip(icon: Icons.bed_outlined, label: '${property.beds} Bed'),
-                    const SizedBox(width: 12),
-                  ],
-                  _Chip(icon: Icons.bathtub_outlined, label: '${property.baths} Bath'),
-                  const SizedBox(width: 12),
-                  _Chip(icon: Icons.square_foot_rounded, label: property.area),
-                  const Spacer(),
-                  Text(property.price, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: _C.primary)),
-                ],
-              ),
-            ),
-
-            Container(
-              decoration: const BoxDecoration(
-                color: Color(0xFFF8F7FD),
-                borderRadius: BorderRadius.vertical(bottom: Radius.circular(18)),
-              ),
-              child: Row(
-                children: [
-                  _ActionBtn(icon: Icons.chat_bubble_outline_rounded, label: 'Inquire',  color: _C.primary, onTap: () {}),
-                  Container(width: 1, height: 40, color: _C.divider),
-                  _ActionBtn(icon: Icons.calendar_today_rounded,      label: 'Viewing',  color: _C.primary, onTap: () {}),
-                  Container(width: 1, height: 40, color: _C.divider),
-                  _ActionBtn(icon: Icons.share_outlined,              label: 'Share',    onTap: () {}),
-                ],
-              ),
-            ),
-          ],
-        ),
+    return GestureDetector(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => PropertyDetailScreen(listing: _toListing(property))),
       ),
-    );
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 14),
+        child: Container(
+          decoration: BoxDecoration(
+            color: _C.bgCard,
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 14, offset: const Offset(0, 3))
+            ],
+          ),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(14),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 70, height: 70,
+                      decoration: BoxDecoration(
+                        color: _typeColor.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Icon(_typeIcon, size: 30, color: _typeColor),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(property.title,
+                                    style: const TextStyle(
+                                        fontSize: 15, fontWeight: FontWeight.w700, color: _C.text)),
+                              ),
+                              const Icon(Icons.favorite_outline_rounded, size: 20, color: _C.textLight),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: _typeColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(property.type,
+                                style: TextStyle(
+                                    fontSize: 10, fontWeight: FontWeight.w700, color: _typeColor)),
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              const Icon(Icons.location_on_rounded, size: 13, color: _C.primary),
+                              const SizedBox(width: 3),
+                              Text('${property.suburb}, ${property.city}',
+                                  style: const TextStyle(fontSize: 12, color: _C.textSub)),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              Divider(height: 1, indent: 14, endIndent: 14, color: _C.divider),
+
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                child: Row(
+                  children: [
+                    if (property.beds > 0) ...[
+                      _Chip(icon: Icons.bed_outlined, label: '${property.beds} Bed'),
+                      const SizedBox(width: 12),
+                    ],
+                    _Chip(icon: Icons.bathtub_outlined, label: '${property.baths} Bath'),
+                    const SizedBox(width: 12),
+                    _Chip(icon: Icons.square_foot_rounded, label: property.area),
+                    const Spacer(),
+                    Text(property.price,
+                        style: const TextStyle(
+                            fontSize: 15, fontWeight: FontWeight.w800, color: _C.primary)),
+                  ],
+                ),
+              ),
+
+              Container(
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF8F7FD),
+                  borderRadius: BorderRadius.vertical(bottom: Radius.circular(18)),
+                ),
+                child: Row(
+                  children: [
+                    _ActionBtn(icon: Icons.chat_bubble_outline_rounded, label: 'Inquire',  color: _C.primary, onTap: () {}),
+                    Container(width: 1, height: 40, color: _C.divider),
+                    _ActionBtn(icon: Icons.calendar_today_rounded,      label: 'Viewing',  color: _C.primary, onTap: () {}),
+                    Container(width: 1, height: 40, color: _C.divider),
+                    _ActionBtn(icon: Icons.share_outlined,              label: 'Share',    onTap: () {}),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),   // Padding
+    );   // GestureDetector
   }
 }
 
@@ -681,11 +785,44 @@ class _ActionBtn extends StatelessWidget {
             children: [
               Icon(icon, size: 15, color: c),
               const SizedBox(width: 5),
-              Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: c)),
+              Text(label,
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: c)),
             ],
           ),
         ),
       ),
     );
   }
+}
+
+// ── Helper: convert _PropertyItem to PropertyListing for navigation ────────────
+PropertyListing _toListing(_PropertyItem p) {
+  // Find a matching full listing from sampleListings, fallback to stub
+  final match = sampleListings.where(
+        (l) => l.title == p.title && l.suburb == p.suburb,
+  );
+  if (match.isNotEmpty) return match.first;
+
+  // Stub for items not yet in sampleListings
+  return PropertyListing(
+    id: p.title.hashCode.toString(),
+    title: p.title,
+    type: p.type,
+    price: p.price,
+    suburb: p.suburb,
+    city: p.city,
+    beds: p.beds,
+    baths: p.baths,
+    area: p.area,
+    deposit: 'USD ${int.tryParse(p.price.replaceAll(RegExp(r'[^0-9]'), '')) != null ? (int.parse(p.price.replaceAll(RegExp(r'[^0-9]'), '')) * 2) : 0}',
+    description: 'A great ${p.type.toLowerCase()} located in ${p.suburb}, ${p.city}. Contact the landlord for more details.',
+    imagePaths: const ['assets/images/property1.jpg'],
+    amenities: const ['Secure Parking', 'Water Included', 'Security Guard'],
+    latitude: -17.8292,
+    longitude: 31.0522,
+    landlordName: 'Property Manager',
+    landlordPhone: '+263771000000',
+    landlordWhatsApp: '+263771000000',
+    availableFrom: 'Immediately',
+  );
 }
